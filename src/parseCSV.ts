@@ -1,5 +1,8 @@
 export class CSVError extends Error {
-  constructor(public message: string, public position: number) {
+  constructor(
+    public message: string,
+    public position: number,
+  ) {
     super(`${message} at position ${position}`);
     this.name = 'CSVError';
   }

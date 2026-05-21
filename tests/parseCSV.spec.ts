@@ -3,7 +3,10 @@ import { parseCSV, CSVError } from '../src/parseCSV.js';
 
 describe('parseCSV - Robustness & Error Handling', () => {
   it('deve processar input básico corretamente', () => {
-    expect(parseCSV('a,b,c\nd,e,f')).toEqual([['a', 'b', 'c'], ['d', 'e', 'f']]);
+    expect(parseCSV('a,b,c\nd,e,f')).toEqual([
+      ['a', 'b', 'c'],
+      ['d', 'e', 'f'],
+    ]);
   });
 
   it('deve lançar CSVError no modo strict para quote não fechada', () => {
