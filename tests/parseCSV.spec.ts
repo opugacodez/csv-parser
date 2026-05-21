@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { parseCSV, CSVError } from '../src/parseCSV';
+import { parseCSV, CSVError } from '../src/parseCSV.js';
 
 describe('parseCSV - Robustness & Error Handling', () => {
   it('deve processar input básico corretamente', () => {
