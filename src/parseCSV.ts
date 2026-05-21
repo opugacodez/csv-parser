@@ -1,33 +1,50 @@
+export interface ParseOptions {
+  separator?: string;
+  quote?: string;
+  strict?: boolean;
+  trim?: boolean;
+  skipEmptyLines?: boolean;
+  preserveWhitespace?: boolean;
+}
+
 export class CSVError extends Error {
   constructor(
     public message: string,
     public position: number,
   ) {
-    super(`${message} at position ${position}`);
+    super(`[CSVError] ${message} at position ${position}`);
     this.name = 'CSVError';
   }
 }
 
-export interface CSVOptions {
-  separator?: string;
-  quote?: string;
-  strict?: boolean;
-}
+export function parseCSV(
+  input: string,
+  options: ParseOptions = {},
+): string[][] {
+  const {
+    separator = ',',
+    quote = '"',
+    strict = false,
+    trim = false,
+    skipEmptyLines = false,
+    preserveWhitespace = false,
+  } = options;
 
-export function parseCSV(input: string, options: CSVOptions = {}): string[][] {
-  const { separator = ',', quote = '"', strict = false } = options;
   const result: string[][] = [];
   let row: string[] = [];
   let field = '';
   let inQuote = false;
 
+  const normalize = (f: string) =>
+    preserveWhitespace ? f : trim ? f.trim() : f;
+
   for (let i = 0; i < input.length; i++) {
     const char = input[i];
-    const nextChar = input[i + 1];
+    const next = input[i + 1];
 
     if (inQuote) {
       if (char === quote) {
-        if (nextChar === quote) {
+        if (next === quote) {
           field += quote;
           i++;
         } else {
@@ -36,38 +53,41 @@ export function parseCSV(input: string, options: CSVOptions = {}): string[][] {
       } else {
         field += char;
       }
-    } else {
-      if (char === quote) {
-        if (strict && field.length > 0) {
-          throw new CSVError('Unexpected quote', i);
-        }
-        inQuote = true;
-      } else if (char === separator) {
-        row.push(field);
-        field = '';
-      } else if (char === '\r' && nextChar === '\n') {
-        row.push(field);
+    } else if (char === quote) {
+      if (strict && field.length > 0) throw new CSVError('Unexpected quote', i);
+      inQuote = true;
+    } else if (char === separator) {
+      row.push(normalize(field));
+      field = '';
+    } else if (char === '\n' || char === '\r') {
+      if (char === '\r' && next === '\n') i++;
+      row.push(normalize(field));
+      if (
+        !skipEmptyLines ||
+        row.length > 1 ||
+        (row.length === 1 && row[0] !== '')
+      ) {
         result.push(row);
-        row = [];
-        field = '';
-        i++;
-      } else if (char === '\n' || char === '\r') {
-        row.push(field);
-        result.push(row);
-        row = [];
-        field = '';
-      } else {
-        field += char;
       }
+      row = [];
+      field = '';
+    } else {
+      field += char;
     }
   }
 
-  if (strict && inQuote) {
-    throw new CSVError('Unclosed quote', input.length);
-  }
+  if (strict && inQuote) throw new CSVError('Unclosed quote', input.length);
 
-  row.push(field);
-  result.push(row);
+  if (field !== '' || row.length > 0) {
+    row.push(normalize(field));
+    if (
+      !skipEmptyLines ||
+      row.length > 1 ||
+      (row.length === 1 && row[0] !== '')
+    ) {
+      result.push(row);
+    }
+  }
 
   return result;
 }
